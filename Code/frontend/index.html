@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Course Agent</title>
+</head>
+<body>
+
+<h2>新增課程</h2>
+
+<input id="name" placeholder="課程名稱"><br>
+<input id="category" placeholder="課程分類"><br>
+<input id="credit" type="number" placeholder="學分數"><br>
+<input id="status" placeholder="狀態"><br>
+<input id="score" type="number" placeholder="分數 (-1 if none)"><br>
+<input id="teacher" placeholder="授課教師"><br>
+<input id="generalType" placeholder="通識分類 (非通識可空)"><br>
+<input id="detail" placeholder="課程細項"><br>
+
+<button onclick="addCourse()">新增</button>
+
+<hr>
+
+<h2>所有課程</h2>
+<button onclick="loadCourses()">重新整理</button>
+<pre id="output"></pre>
+
+<script>
+function addCourse() {
+    fetch("http://127.0.0.1:5000/course", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            name: document.getElementById("name").value,
+            category: document.getElementById("category").value,
+            credit: parseInt(document.getElementById("credit").value),
+            status: document.getElementById("status").value,
+            score: parseInt(document.getElementById("score").value),
+            teacher: document.getElementById("teacher").value,
+            generalType: document.getElementById("generalType").value,
+            detail: document.getElementById("detail").value
+        })
+    }).then(res => res.json())
+      .then(data => alert(data.message));
+}
+
+function loadCourses() {
+    fetch("http://127.0.0.1:5000/courses")
+        .then(res => res.json())
+        .then(data => {
+            document.getElementById("output").textContent =
+                JSON.stringify(data, null, 2);
+        });
+}
+</script>
+
+</body>
+</html>
