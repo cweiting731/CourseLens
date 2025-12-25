@@ -1,58 +1,193 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
-    <meta charset="utf-8">
-    <title>Course Agent</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course Agent UI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .card-bg { background-color: #D1F2D6; border-radius: 20px; border: 2px solid #000; }
+        .item-bg { background-color: #BDE4FF; border-radius: 10px; border: 1.5px solid #000; }
+        .modal-overlay { background: rgba(0,0,0,0.5); display: none; }
+    </style>
 </head>
-<body>
+<body class="bg-gray-100 p-8">
 
-<h2>新增課程</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        
+        <div class="flex flex-col gap-4">
+            <div class="card-bg p-6 h-[500px] flex flex-col">
+                <div id="query-results" class="flex-grow overflow-y-auto space-y-3 pr-2">
+                    </div>
+                <div class="mt-4 flex gap-2 item-bg p-3">
+                    <input id="chatInput" type="text" placeholder="對話框 (text editor)" class="bg-transparent flex-grow outline-none px-2">
+                    <button onclick="sendChat()" class="text-2xl hover:scale-110 transition"><i class="fas fa-play"></i></button>
+                </div>
+            </div>
+        </div>
 
-<input id="name" placeholder="課程名稱"><br>
-<input id="category" placeholder="課程分類"><br>
-<input id="credit" type="number" placeholder="學分數"><br>
-<input id="status" placeholder="狀態"><br>
-<input id="score" type="number" placeholder="分數 (-1 if none)"><br>
-<input id="teacher" placeholder="授課教師"><br>
-<input id="generalType" placeholder="通識分類 (非通識可空)"><br>
-<input id="detail" placeholder="課程細項"><br>
+        <div class="flex flex-col gap-6">
+            <div class="card-bg p-4 h-[200px]">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="font-bold text-xl">學分計算總表</span>
+                    <button onclick="loadAll()" class="text-xl hover:rotate-180 transition duration-500"><i class="fas fa-sync-alt"></i></button>
+                </div>
+                <div class="bg-gray-800 text-white p-2 rounded text-xs h-[120px] overflow-auto">
+                    <table class="w-full text-left">
+                        <thead><tr class="border-b border-gray-600"><th>學分預算</th><th>完成</th><th>進行中</th></tr></thead>
+                        <tbody id="summaryTable"></tbody>
+                    </table>
+                </div>
+            </div>
 
-<button onclick="addCourse()">新增</button>
+            <div class="card-bg p-4 flex-grow min-h-[300px]">
+                <div class="flex justify-between items-center mb-4">
+                    <span class="font-bold text-xl">課程總列表</span>
+                    <div class="space-x-3">
+                        <button onclick="openModal()" class="text-2xl hover:text-blue-600"><i class="fas fa-plus"></i></button>
+                        <button onclick="loadAll()" class="text-xl hover:rotate-180 transition duration-500"><i class="fas fa-sync-alt"></i></button>
+                    </div>
+                </div>
+                <div id="course-list" class="space-y-3 overflow-y-auto h-[250px] pr-2">
+                    </div>
+                <div class="text-center text-gray-500 mt-2 text-sm italic">要可以滾動</div>
+            </div>
+        </div>
+    </div>
 
-<hr>
+    <div id="modal" class="modal-overlay fixed inset-0 flex items-center justify-center z-50">
+        <div class="bg-white p-6 rounded-xl border-2 border-black w-80">
+            <h3 id="modalTitle" class="font-bold mb-4">課程編輯</h3>
+            <input type="hidden" id="courseId">
+            <div class="space-y-2 text-sm">
+                <input id="m_name" placeholder="課程名稱" class="w-full border p-1 rounded">
+                <input id="m_cat" placeholder="課程分類" class="w-full border p-1 rounded">
+                <input id="m_credit" type="number" placeholder="學分數" class="w-full border p-1 rounded">
+                <input id="m_status" placeholder="狀態" class="w-full border p-1 rounded">
+                <input id="m_score" type="number" placeholder="分數 (-1 if none)" class="w-full border p-1 rounded">
+                <input id="m_teacher" placeholder="授課教師" class="w-full border p-1 rounded">
+                <input id="m_gen" placeholder="通識分類 (非通識可空)" class="w-full border p-1 rounded">
+                <textarea id="m_detail" placeholder="課程細項" class="w-full border p-1 rounded"></textarea>
+            </div>
+            <div class="mt-4 flex justify-end gap-2">
+                <button onclick="closeModal()" class="px-4 py-1 bg-gray-200 rounded">取消</button>
+                <button onclick="saveCourse()" class="px-4 py-1 bg-blue-500 text-white rounded">儲存</button>
+            </div>
+        </div>
+    </div>
 
-<h2>所有課程</h2>
-<button onclick="loadCourses()">重新整理</button>
-<pre id="output"></pre>
+    <script>
+        const API_BASE = "http://127.0.0.1:5000";
 
-<script>
-function addCourse() {
-    fetch("http://127.0.0.1:5000/course", {
-        method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({
-            name: document.getElementById("name").value,
-            category: document.getElementById("category").value,
-            credit: parseInt(document.getElementById("credit").value),
-            status: document.getElementById("status").value,
-            score: parseInt(document.getElementById("score").value),
-            teacher: document.getElementById("teacher").value,
-            generalType: document.getElementById("generalType").value,
-            detail: document.getElementById("detail").value
-        })
-    }).then(res => res.json())
-      .then(data => alert(data.message));
-}
+        // 載入所有資料
+        async function loadAll() {
+            const res = await fetch(`${API_BASE}/courses`);
+            const data = await res.json();
+            renderCourses(data);
+            renderSummary(data);
+        }
 
-function loadCourses() {
-    fetch("http://127.0.0.1:5000/courses")
-        .then(res => res.json())
-        .then(data => {
-            document.getElementById("output").textContent =
-                JSON.stringify(data, null, 2);
-        });
-}
-</script>
+        function renderCourses(courses) {
+            const container = document.getElementById('course-list');
+            const leftContainer = document.getElementById('query-results');
+            const html = courses.map(c => `
+                <div class="item-bg p-3 flex justify-between items-center shadow-sm">
+                    <div class="flex gap-4 font-medium">
+                        <span>${c.name}</span>
+                        <span class="text-gray-600">${c.category}</span>
+                    </div>
+                    <div class="flex gap-3 text-lg">
+                        <button onclick='openModal(${JSON.stringify(c)})' class="text-gray-700 hover:text-blue-600"><i class="fas fa-edit"></i></button>
+                        <button onclick="deleteCourse(${c.id})" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = html;
+            leftContainer.innerHTML = html; // 左側同步顯示
+        }
 
+        function renderSummary(courses) {
+            const summaryBody = document.getElementById('summaryTable');
+            // 這裡簡單示範，你可以根據需求做更複雜的學分計算
+            summaryBody.innerHTML = `
+                <tr><td>必修</td><td>${courses.filter(c=>c.category==='必修').length}</td><td>0</td></tr>
+                <tr><td>通識</td><td>${courses.filter(c=>c.category==='通識').length}</td><td>0</td></tr>
+            `;
+        }
+
+        // Modal 控制
+        function openModal(course = null) {
+            document.getElementById('modal').style.display = 'flex';
+            if(course) {
+                document.getElementById('modalTitle').innerText = "編輯課程";
+                document.getElementById('courseId').value = course.id;
+                document.getElementById('m_name').value = course.name;
+                document.getElementById('m_cat').value = course.category;
+                document.getElementById('m_credit').value = course.credit;
+                document.getElementById('m_status').value = course.status;
+                document.getElementById('m_score').value = course.score;
+                document.getElementById('m_teacher').value = course.teacher;
+                document.getElementById('m_gen').value = course.generalType;
+                document.getElementById('m_detail').value = course.detail;
+            } else {
+                document.getElementById('modalTitle').innerText = "新增課程";
+                document.getElementById('courseId').value = "";
+                document.querySelectorAll('#modal input, #modal textarea').forEach(i => i.value = "");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal').style.display = 'none';
+        }
+
+        // 送出新增或更新
+        async function saveCourse() {
+            const id = document.getElementById('courseId').value;
+            const method = id ? "PUT" : "POST";
+            const payload = {
+                name: document.getElementById('m_name').value,
+                category: document.getElementById('m_cat').value,
+                credit: parseInt(document.getElementById('m_credit').value) || 0,
+                status: document.getElementById('m_status').value,
+                score: parseInt(document.getElementById('m_score').value) || -1,
+                teacher: document.getElementById('m_teacher').value,
+                generalType: document.getElementById('m_gen').value,
+                detail: document.getElementById('m_detail').value
+            };
+            if(id) payload.id = parseInt(id);
+
+            await fetch(`${API_BASE}/course`, {
+                method: method,
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify(payload)
+            });
+            closeModal();
+            loadAll();
+        }
+
+        // 刪除 API
+        async function deleteCourse(id) {
+            if(!confirm("確定要刪除嗎？")) return;
+            await fetch(`${API_BASE}/course/${id}`, { method: "DELETE" });
+            loadAll();
+        }
+
+        // 對話框 API
+        async function sendChat() {
+            const text = document.getElementById('chatInput').value;
+            if(!text) return;
+            await fetch(`${API_BASE}/chat`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({ text })
+            });
+            alert("訊息已送出");
+            document.getElementById('chatInput').value = "";
+        }
+
+        // 初始載入
+        loadAll();
+    </script>
 </body>
 </html>
