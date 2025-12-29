@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS courses (
 )
 """)
 
+
 conn.commit()
 conn.close()
 print(f"Database initialized at: {DB_PATH}")
