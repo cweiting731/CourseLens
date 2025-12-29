@@ -1,17 +1,20 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pathlib import Path
+from dotenv import load_dotenv
 import sqlite3
 import ollama
+import os
 
 app = Flask(__name__)
 CORS(app)
 BASE_DIR = Path(__file__).resolve().parent
 DB = BASE_DIR / "courses.db"
 
-remote_host = "https://api-gateway.netdb.csie.ncku.edu.tw"
-api_key = "API_KEY"
-model_name = "gemma3:4b"
+load_dotenv(BASE_DIR / ".." / "secret.env")
+remote_host = os.getenv("REMOTE_HOST")
+api_key = os.getenv("API_KEY")
+model_name = os.getenv("MODEL_NAME")
 
 # 初始化 AI 客戶端
 client = ollama.Client(
