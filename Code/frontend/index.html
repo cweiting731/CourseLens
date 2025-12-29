@@ -15,14 +15,22 @@
 <body class="bg-gray-100 p-8">
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        
         <div class="flex flex-col gap-4">
             <div class="card-bg p-6 h-[500px] flex flex-col">
+                <div class="font-bold text-xl mb-3">
+                    符合搜尋條件的課程
+                </div>
+                <div id="query-status" class="text-sm text-gray-500 mb-2 hidden">
+                    查詢中…
+                </div>
                 <div id="query-results" class="flex-grow overflow-y-auto space-y-3 pr-2">
+                    <div class="text-gray-400 italic">
+                        尚未進行搜尋
                     </div>
+                </div>
                 <div class="mt-4 flex gap-2 item-bg p-3">
                     <input id="chatInput" type="text" placeholder="對話框 (text editor)" class="bg-transparent flex-grow outline-none px-2">
-                    <button onclick="sendChat()" class="text-2xl hover:scale-110 transition"><i class="fas fa-play"></i></button>
+                    <button id="sendBtn" onclick="sendChat()" class="text-2xl hover:scale-110 transition"><i class="fas fa-play"></i></button>
                 </div>
             </div>
         </div>
@@ -62,9 +70,34 @@
             <input type="hidden" id="courseId">
             <div class="space-y-2 text-sm">
                 <input id="m_name" placeholder="課程名稱" class="w-full border p-1 rounded">
-                <input id="m_cat" placeholder="課程分類" class="w-full border p-1 rounded">
+                <!-- <input id="m_cat" placeholder="課程分類" class="w-full border p-1 rounded"> -->
+                <!-- 調整課程輸入選項 -->
+                <select id="m_cat" class="w-full border p-1 rounded">
+                    <option value="">請選擇課程分類</option>
+                    <option value="必修">必修</option>
+                    <option value="系內選修">系內選修</option>
+                    <option value="系外選修">系外選修</option>
+                    <option value="領域通識">領域通識</option>
+                    <option value="融合通識">融合通識</option>
+                    <option value="大學國文">大學國文</option>
+                    <option value="體育">體育</option>
+                    <option value="英文">英文</option>
+                    <option value="踏溯台南">踏溯台南</option>
+                    <option value="其他">其他</option>
+                </select>
+                <input
+                    id="m_cat_other"
+                    placeholder="其他分類請輸入"
+                    class="w-full border p-1 rounded hidden">
+
                 <input id="m_credit" type="number" placeholder="學分數" class="w-full border p-1 rounded">
-                <input id="m_status" placeholder="狀態" class="w-full border p-1 rounded">
+                <!-- <input id="m_status" placeholder="狀態" class="w-full border p-1 rounded"> -->
+                <select id="m_status" class="w-full border p-1 rounded">
+                    <option value="">請選擇狀態</option>
+                    <option value="完成">完成</option>
+                    <option value="進行中">進行中</option>
+                </select>
+
                 <input id="m_score" type="number" placeholder="分數 (-1 if none)" class="w-full border p-1 rounded">
                 <input id="m_teacher" placeholder="授課教師" class="w-full border p-1 rounded">
                 <input id="m_gen" placeholder="通識分類 (非通識可空)" class="w-full border p-1 rounded">
@@ -104,26 +137,89 @@
                 </div>
             `).join('');
             container.innerHTML = html;
-            leftContainer.innerHTML = html; // 左側同步顯示
+            //leftContainer.innerHTML = html; // 左側同步顯示
         }
 
         function renderSummary(courses) {
             const summaryBody = document.getElementById('summaryTable');
-            // 這裡簡單示範，你可以根據需求做更複雜的學分計算
-            summaryBody.innerHTML = `
-                <tr><td>必修</td><td>${courses.filter(c=>c.category==='必修').length}</td><td>0</td></tr>
-                <tr><td>通識</td><td>${courses.filter(c=>c.category==='通識').length}</td><td>0</td></tr>
-            `;
+            if(!summaryBody) return;
+            const summary = {};
+
+            courses.forEach(course => {
+                const category = course.category || "未分類";
+                const credit = Number(course.credit) || 0;
+                const status = course.status || "";
+
+                if(!summary[category]) {
+                    summary[category] = { completed: 0, ongoing: 0 };
+                }
+
+                if(status === "完成") {
+                    summary[category].completed += credit;
+                } else if (status === "進行中") {
+                    summary[category].ongoing += credit;
+                }
+            });
+
+            let html = "";
+            for(const category in summary) {
+                html += `
+                    <tr class="border-b border-gray-700">
+                        <td>${category}</td>
+                        <td>${summary[category].completed}</td>
+                        <td>${summary[category].ongoing}</td>
+                    </tr>
+                `;
+            }
+            summaryBody.innerHTML = html;
+
         }
+
+        // 課程分類其他選項顯示控制
+        document.getElementById('m_cat').addEventListener('change', function () {
+            const otherInput = document.getElementById('m_cat_other');
+            if (this.value === '其他') {
+                otherInput.classList.remove('hidden');
+            } else {
+                otherInput.classList.add('hidden');
+                otherInput.value = '';
+            }
+        });
+
+        document.getElementById('m_status').addEventListener('change', function () {
+            const scoreInput = document.getElementById('m_score');
+
+            if (this.value === "進行中") {
+                scoreInput.value = -1;      // 強制設 -1
+                scoreInput.disabled = true; // 鎖住不能改
+            } else {
+                scoreInput.disabled = false; // 完成時可填
+            }
+        });
+
+
 
         // Modal 控制
         function openModal(course = null) {
             document.getElementById('modal').style.display = 'flex';
             if(course) {
+                const predefinedCategories = [
+                    "必修","系內選修","系外選修","領域通識","融合通識",
+                    "大學國文","體育","英文","踏溯台南"
+                ];                  
                 document.getElementById('modalTitle').innerText = "編輯課程";
                 document.getElementById('courseId').value = course.id;
                 document.getElementById('m_name').value = course.name;
-                document.getElementById('m_cat').value = course.category;
+                // document.getElementById('m_cat').value = course.category;
+                if (predefinedCategories.includes(course.category)) {
+                    document.getElementById('m_cat').value = course.category;
+                    document.getElementById('m_cat_other').classList.add('hidden');
+                    document.getElementById('m_cat_other').value = '';
+                } else {
+                    document.getElementById('m_cat').value = "其他";
+                    document.getElementById('m_cat_other').classList.remove('hidden');
+                    document.getElementById('m_cat_other').value = course.category;
+                }
                 document.getElementById('m_credit').value = course.credit;
                 document.getElementById('m_status').value = course.status;
                 document.getElementById('m_score').value = course.score;
@@ -133,39 +229,93 @@
             } else {
                 document.getElementById('modalTitle').innerText = "新增課程";
                 document.getElementById('courseId').value = "";
-                document.querySelectorAll('#modal input, #modal textarea').forEach(i => i.value = "");
+
+                // 清空 input / textarea 並解除 disabled
+                document.querySelectorAll('#modal input, #modal textarea')
+                    .forEach(i => {
+                        i.value = "";
+                        i.disabled = false;
+                    });
+
+                document.getElementById('m_cat').value = "必修";      // 預設必修
+                document.getElementById('m_status').value = "進行中"; // 預設進行中
+
+                document.getElementById('m_score').value = -1;
+                document.getElementById('m_score').disabled = true;
+
+                document.getElementById('m_cat_other').classList.add('hidden');
             }
+
         }
 
         function closeModal() {
             document.getElementById('modal').style.display = 'none';
         }
 
+
         // 送出新增或更新
         async function saveCourse() {
             const id = document.getElementById('courseId').value;
-            const method = id ? "PUT" : "POST";
+            const status = document.getElementById('m_status').value;
+            const credit = parseInt(document.getElementById('m_credit').value) || 0;
+
+            const name = document.getElementById('m_name').value.trim();
+            const rawScore = parseInt(document.getElementById('m_score').value);
+            const finalScore = status === "進行中" ? -1 : (isNaN(rawScore) ? -1 : rawScore);
+
+            const teacher = document.getElementById('m_teacher').value;
+            const generalType = document.getElementById('m_gen').value;
+            const detail = document.getElementById('m_detail').value;
+
+            const selectedCategory = document.getElementById('m_cat').value;
+            const otherInput = document.getElementById('m_cat_other');
+
+            if (!name || !selectedCategory || !status) {
+                alert("請填寫課程名稱、分類與狀態");
+                return;
+            }
+            //處理其他分類
+            let finalCategory = selectedCategory;
+            if (selectedCategory === "其他") {
+                if (!otherInput || !otherInput.value.trim()) {
+                    alert("請輸入其他課程分類");
+                    return;
+                }
+                finalCategory = otherInput.value.trim();
+            }
+
             const payload = {
-                name: document.getElementById('m_name').value,
-                category: document.getElementById('m_cat').value,
-                credit: parseInt(document.getElementById('m_credit').value) || 0,
-                status: document.getElementById('m_status').value,
-                score: parseInt(document.getElementById('m_score').value) || -1,
-                teacher: document.getElementById('m_teacher').value,
-                generalType: document.getElementById('m_gen').value,
-                detail: document.getElementById('m_detail').value
+                name,
+                category: finalCategory,
+                credit,
+                status,
+                score: finalScore,
+                teacher,
+                generalType,
+                detail
             };
-            if(id) payload.id = parseInt(id);
 
-            await fetch(`${API_BASE}/course`, {
-                method: method,
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify(payload)
-            });
-            closeModal();
-            loadAll();
+            if (id) payload.id = parseInt(id);
+
+            try {
+                const res = await fetch(`${API_BASE}/course`, {
+                    method: id ? "PUT" : "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    throw new Error("後端回傳錯誤");
+                }
+
+                closeModal();
+                loadAll();
+
+            } catch (err) {
+                console.error(err);
+                alert("儲存失敗，請查看 console");
+            }
         }
-
         // 刪除 API
         async function deleteCourse(id) {
             if(!confirm("確定要刪除嗎？")) return;
@@ -173,18 +323,102 @@
             loadAll();
         }
 
+        
+
+        function renderQueryResults(courses) {
+            const container = document.getElementById('query-results');
+
+            if (!courses || courses.length === 0) {
+                container.innerHTML = `
+                    <div class="text-gray-400 italic">
+                        查無符合條件的課程
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = courses.map(c => `
+                <div class="item-bg p-3 shadow-sm">
+                    <div class="font-medium">${c.name}</div>
+                    <div class="text-sm text-gray-600">${c.category}</div>
+                </div>
+            `).join('');
+        }
+
         // 對話框 API
         async function sendChat() {
-            const text = document.getElementById('chatInput').value;
-            if(!text) return;
-            await fetch(`${API_BASE}/chat`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({ text })
-            });
-            alert("訊息已送出");
-            document.getElementById('chatInput').value = "";
-        }
+            const input = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const statusText = document.getElementById('query-status');
+            const queryResults = document.getElementById('query-results');
+
+            const text = input.value.trim();
+            if (!text) return;
+
+            // UI 進入「查詢中」狀態
+            sendBtn.disabled = true;
+            sendBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            statusText.classList.remove('hidden');
+            statusText.innerText = "查詢中…";
+
+            // 可選：清空舊結果
+            queryResults.innerHTML = "";
+
+            try {
+                //呼叫後端
+                const res = await fetch(`${API_BASE}/chat`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ text })
+                });
+
+                if (!res.ok) {
+                    throw new Error("查詢失敗");
+                }
+
+                const result = await res.json();
+                // 假設後端回傳的是課程陣列
+                // result = [{ name, category, ... }, ...]
+
+                //更新左側查詢結果
+                renderQueryResults(result);
+
+
+                // // 模擬等待
+                // await new Promise(r => setTimeout(r, 800));
+                // // 假的後端回傳資料（test）
+                // const fakeResult = [
+                //     {
+                //         id: 1,
+                //         name: "計算理論",
+                //         category: "系內選修",
+                //         credit: 3,
+                //         status: "完成"
+                //     },
+                //     {
+                //         id: 2,
+                //         name: "OpenCV 深度學習",
+                //         category: "系內選修",
+                //         credit: 3,
+                //         status: "進行中"
+                //     }
+                // ];
+
+                // //display fake result
+                // renderQueryResults(fakeResult);
+
+                statusText.innerText = "查詢完成";
+
+            } catch (err) {
+                console.error(err);
+                statusText.innerText = "查詢失敗，請再試一次";
+            } finally {
+                // UI 恢復
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                input.value = "";
+            }
+    }
 
         // 初始載入
         loadAll();
