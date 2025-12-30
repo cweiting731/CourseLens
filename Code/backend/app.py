@@ -22,6 +22,9 @@ client = ollama.Client(
     headers={'Authorization': f'Bearer {api_key}'}
 )
 
+def printInfo(str):
+    print(f"\033[36m{str}\033[0m")
+
 def get_db():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
@@ -37,6 +40,7 @@ def list_courses():
     conn.close()
     
     result = [dict(row) for row in rows]
+    printInfo(f"loadAll: {len(result)} courses")
     return jsonify(result), 200
 
 # 2. 新增或更新課程 (POST/PUT)
@@ -53,6 +57,8 @@ def save_course():
         """, (data["name"], data["category"], data.get("credit", 0), data["status"], 
               data.get("score", -1), data["teacher"], data["generalType"], data["detail"]))
         msg = "Course inserted"
+        # 輸出插入課程詳細資訊
+        printInfo(f"Inserted Course: {data['name']}, Category: {data['category']}, Credit: {data.get('credit', 0)}, Status: {data['status']}, Score: {data.get('score', -1)}, Teacher: {data['teacher']}, GeneralType: {data['generalType']}, Detail: {data['detail']}")
     else:  # PUT
         cursor.execute("""
             UPDATE courses SET name=?, category=?, credit=?, status=?, score=?, teacher=?, generalType=?, detail=?
@@ -60,6 +66,8 @@ def save_course():
         """, (data["name"], data["category"], data["credit"], data["status"], 
               data["score"], data["teacher"], data["generalType"], data["detail"], data["id"]))
         msg = "Course updated"
+        # 輸出更新課程詳細資訊
+        printInfo(f"Updated Course ID {data['id']}: {data['name']}, Category: {data['category']}, Credit: {data['credit']}, Status: {data['status']}, Score: {data['score']}, Teacher: {data['teacher']}, GeneralType: {data['generalType']}, Detail: {data['detail']}")
 
     conn.commit()
     conn.close()
@@ -73,6 +81,7 @@ def delete_course(course_id):
     cursor.execute("DELETE FROM courses WHERE id=?", (course_id,))
     conn.commit()
     conn.close()
+    printInfo(f"Deleted Course ID {course_id}")
     return jsonify({"message": "Course deleted"}), 200
 
 # 4. 對話框 API (保留效果)
@@ -81,6 +90,7 @@ def chat():
     user_question = request.json.get("text")
     if not user_question:
         return jsonify({"message": "請輸入問題"}), 400
+    printInfo(f"User Question: {user_question}")
 
     # 1. 準備 System Prompt (從組員程式碼複製過來)
     system_prompt = """
@@ -92,7 +102,7 @@ def chat():
     - name: TEXT (Course name)
     - category: TEXT (Options: '必修', '系內選修', '系外選修', '領域通識', '融合通識', '大學國文', '體育', '英文', '踏溯台南', '其他')
     - credit: INTEGER (Credits)
-    - status: TEXT (Options: '進行中', '完成')
+    - status: TEXT (Options: '進行中', '待定', '完成')
     - score: INTEGER (Finished score, -1 if no score yet)
     - teacher: TEXT (Instructor name)
     - generalType: TEXT (Options: '人文學', '社會科學', '自然與工程科學', '生命科學與健康', '科技整合領域'. Only if category is '領域通識')
@@ -129,7 +139,7 @@ def chat():
         raw_sql = response['response'].strip()
         sql_query = raw_sql.replace("```sqlite", "").replace("```sql", "").replace("```", "").strip()
         
-        print(f"清理後的 SQL: {sql_query}")
+        printInfo(f"Generated SQL: {sql_query}")
 
         # 3. 執行 SQL (對應流程圖：根據指令搜尋資料庫)
         conn = get_db()
@@ -140,6 +150,7 @@ def chat():
 
         # 4. 回傳結果 (對應流程圖：response json 格式資料 200)
         result = [dict(row) for row in rows]
+        printInfo(f"Query Result: {len(result)} records found")
         return jsonify(result), 200
 
     except Exception as e:
