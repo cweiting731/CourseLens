@@ -7,109 +7,136 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        .card-bg { background-color: #D1F2D6; border-radius: 20px; border: 2px solid #000; }
-        .item-bg { background-color: #BDE4FF; border-radius: 10px; border: 1.5px solid #000; }
+        .card-bg { background-color: #BECBD3; border-radius: 20px; border: 2px solid #000; }
+        .item-bg { background-color: #E6F1ED; border-radius: 10px; border: 1.5px solid #000; }
         .modal-overlay { background: rgba(0,0,0,0.5); display: none; }
     </style>
 </head>
-<body class="bg-gray-100 p-8">
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-        <div class="flex flex-col gap-4">
-            <div class="card-bg p-6 h-[500px] flex flex-col">
-                <div class="font-bold text-xl mb-3">
-                    符合搜尋條件的課程
+<body class="bg-[#8E9BAE] p-8">
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+
+    <!-- ===== 左欄 ===== -->
+    <div class="flex flex-col gap-6">
+
+        <!-- 符合搜尋條件的課程 -->
+        <div class="card-bg p-6 h-[550px] flex flex-col">
+            <div class="font-bold text-xl mb-3">
+                符合搜尋條件的課程
+            </div>
+
+            <div id="query-status" class="text-sm text-gray-500 mb-2 hidden">
+                查詢中…
+            </div>
+
+            <div id="query-results" class="flex-grow overflow-y-auto space-y-3 pr-2">
+                <div class="text-gray-400 italic">
+                    尚未進行搜尋
                 </div>
-                <div id="query-status" class="text-sm text-gray-500 mb-2 hidden">
-                    查詢中…
-                </div>
-                <div id="query-results" class="flex-grow overflow-y-auto space-y-3 pr-2">
-                    <div class="text-gray-400 italic">
-                        尚未進行搜尋
-                    </div>
-                </div>
-                <div class="mt-4 flex gap-2 item-bg p-3">
-                    <input id="chatInput" type="text" placeholder="對話框 (text editor)" class="bg-transparent flex-grow outline-none px-2">
-                    <button id="sendBtn" onclick="sendChat()" class="text-2xl hover:scale-110 transition"><i class="fas fa-play"></i></button>
-                </div>
+            </div>
+
+            <div class="mt-4 flex gap-2 item-bg p-3">
+                <input id="chatInput" type="text" placeholder="對話框 (text editor)"
+                       class="bg-transparent flex-grow outline-none px-2">
+                <button id="sendBtn" onclick="sendChat()" class="text-2xl hover:scale-110 transition">
+                    <i class="fas fa-play"></i>
+                </button>
             </div>
         </div>
 
-        <div class="flex flex-col gap-6">
-            <div class="card-bg p-4 h-[200px]">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="font-bold text-xl">學分計算總表</span>
-                    <button onclick="loadAll()" class="text-xl hover:rotate-180 transition duration-500"><i class="fas fa-sync-alt"></i></button>
-                </div>
-                <div class="bg-gray-800 text-white p-2 rounded text-xs h-[120px] overflow-auto">
-                    <table class="w-full text-left">
-                        <thead><tr class="border-b border-gray-600"><th>學分預算</th><th>完成</th><th>進行中</th></tr></thead>
-                        <tbody id="summaryTable"></tbody>
-                    </table>
-                </div>
+        <!-- 學分計算總表-->
+        <div class="card-bg p-4 h-[250px]">
+            <div class="flex justify-between items-center mb-2">
+                <span class="font-bold text-xl">學分計算總表</span>
+                <button onclick="loadAll()" class="text-xl hover:rotate-180 transition duration-500">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
             </div>
 
-            <div class="card-bg p-4 flex-grow min-h-[300px]">
-                <div class="flex justify-between items-center mb-4">
-                    <span class="font-bold text-xl">課程總列表</span>
-                    <div class="space-x-3">
-                        <button onclick="openModal()" class="text-2xl hover:text-blue-600"><i class="fas fa-plus"></i></button>
-                        <button onclick="loadAll()" class="text-xl hover:rotate-180 transition duration-500"><i class="fas fa-sync-alt"></i></button>
-                    </div>
-                </div>
-                <div id="course-list" class="space-y-3 overflow-y-auto h-[250px] pr-2">
-                    </div>
-                <div class="text-center text-gray-500 mt-2 text-sm italic">要可以滾動</div>
-            </div>
+            <div id="summaryTable" class="space-y-2 max-h-[170px] overflow-y-auto pr-1"></div>
         </div>
+
     </div>
 
-    <div id="modal" class="modal-overlay fixed inset-0 flex items-center justify-center z-50">
-        <div class="bg-white p-6 rounded-xl border-2 border-black w-80">
-            <h3 id="modalTitle" class="font-bold mb-4">課程編輯</h3>
-            <input type="hidden" id="courseId">
-            <div class="space-y-2 text-sm">
-                <input id="m_name" placeholder="課程名稱" class="w-full border p-1 rounded">
-                <!-- <input id="m_cat" placeholder="課程分類" class="w-full border p-1 rounded"> -->
-                <!-- 調整課程輸入選項 -->
-                <select id="m_cat" class="w-full border p-1 rounded">
-                    <option value="">請選擇課程分類</option>
-                    <option value="必修">必修</option>
-                    <option value="系內選修">系內選修</option>
-                    <option value="系外選修">系外選修</option>
-                    <option value="領域通識">領域通識</option>
-                    <option value="融合通識">融合通識</option>
-                    <option value="大學國文">大學國文</option>
-                    <option value="體育">體育</option>
-                    <option value="英文">英文</option>
-                    <option value="踏溯台南">踏溯台南</option>
-                    <option value="其他">其他</option>
-                </select>
-                <input
-                    id="m_cat_other"
-                    placeholder="其他分類請輸入"
-                    class="w-full border p-1 rounded hidden">
+    <!-- ===== 右欄 ===== -->
+    <div class="flex flex-col gap-6">
 
-                <input id="m_credit" type="number" placeholder="學分數" class="w-full border p-1 rounded">
-                <!-- <input id="m_status" placeholder="狀態" class="w-full border p-1 rounded"> -->
-                <select id="m_status" class="w-full border p-1 rounded">
-                    <option value="">請選擇狀態</option>
-                    <option value="完成">完成</option>
-                    <option value="進行中">進行中</option>
-                </select>
+        <!-- 課程總列表 -->
+        <div class="card-bg p-4 flex-grow min-h-[300px]">
+            <div class="flex justify-between items-center mb-4">
+                <span class="font-bold text-xl">課程總列表</span>
+                <div class="space-x-3">
+                    <button onclick="openModal()" class="text-2xl hover:text-blue-600">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button onclick="loadAll()" class="text-xl hover:rotate-180 transition duration-500">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
 
-                <input id="m_score" type="number" placeholder="分數 (-1 if none)" class="w-full border p-1 rounded">
-                <input id="m_teacher" placeholder="授課教師" class="w-full border p-1 rounded">
-                <input id="m_gen" placeholder="通識分類 (非通識可空)" class="w-full border p-1 rounded">
-                <textarea id="m_detail" placeholder="課程細項" class="w-full border p-1 rounded"></textarea>
-            </div>
-            <div class="mt-4 flex justify-end gap-2">
-                <button onclick="closeModal()" class="px-4 py-1 bg-gray-200 rounded">取消</button>
-                <button onclick="saveCourse()" class="px-4 py-1 bg-blue-500 text-white rounded">儲存</button>
-            </div>
+            <div id="course-list" class="space-y-3 overflow-y-auto h-[730px] pr-2"></div>
         </div>
+
     </div>
 
+</div>
+
+<!-- ===== Modal ===== -->
+<div id="modal" class="modal-overlay fixed inset-0 flex items-center justify-center z-50">
+    <div class="bg-white p-6 rounded-xl border-2 border-black w-80">
+        <h3 id="modalTitle" class="font-bold mb-4">課程編輯</h3>
+        <input type="hidden" id="courseId">
+
+        <div class="space-y-2 text-sm">
+            <input id="m_name" placeholder="課程名稱" class="w-full border p-1 rounded">
+
+            <select id="m_cat" class="w-full border p-1 rounded">
+                <option value="">請選擇課程分類</option>
+                <option value="必修">必修</option>
+                <option value="系內選修">系內選修</option>
+                <option value="系外選修">系外選修</option>
+                <option value="領域通識">領域通識</option>
+                <option value="融合通識">融合通識</option>
+                <option value="大學國文">大學國文</option>
+                <option value="體育">體育</option>
+                <option value="英文">英文</option>
+                <option value="踏溯台南">踏溯台南</option>
+                <option value="其他">其他</option>
+            </select>
+
+            <input id="m_cat_other" placeholder="其他分類請輸入"
+                   class="w-full border p-1 rounded hidden">
+
+            <input id="m_credit" type="number" placeholder="學分數"
+                   class="w-full border p-1 rounded">
+
+            <select id="m_status" class="w-full border p-1 rounded">
+                <option value="">請選擇狀態</option>
+                <option value="完成">完成</option>
+                <option value="進行中">進行中</option>
+            </select>
+
+            <input id="m_score" type="number" placeholder="分數 (-1 if none)"
+                   class="w-full border p-1 rounded">
+
+            <input id="m_teacher" placeholder="授課教師"
+                   class="w-full border p-1 rounded">
+
+            <input id="m_gen" placeholder="通識分類 (非通識可空)"
+                   class="w-full border p-1 rounded">
+
+            <textarea id="m_detail" placeholder="課程細項"
+                      class="w-full border p-1 rounded"></textarea>
+        </div>
+
+        <div class="mt-4 flex justify-end gap-2">
+            <button onclick="closeModal()" class="px-4 py-1 bg-gray-200 rounded">取消</button>
+            <button onclick="saveCourse()" class="px-4 py-1 bg-blue-500 text-white rounded">儲存</button>
+        </div>
+    </div>
+</div>
     <script>
         const API_BASE = "http://127.0.0.1:5000";
 
@@ -137,12 +164,12 @@
                 </div>
             `).join('');
             container.innerHTML = html;
-            //leftContainer.innerHTML = html; // 左側同步顯示
         }
 
         function renderSummary(courses) {
             const summaryBody = document.getElementById('summaryTable');
-            if(!summaryBody) return;
+            if (!summaryBody) return;
+
             const summary = {};
 
             courses.forEach(course => {
@@ -150,11 +177,11 @@
                 const credit = Number(course.credit) || 0;
                 const status = course.status || "";
 
-                if(!summary[category]) {
+                if (!summary[category]) {
                     summary[category] = { completed: 0, ongoing: 0 };
                 }
 
-                if(status === "完成") {
+                if (status === "完成") {
                     summary[category].completed += credit;
                 } else if (status === "進行中") {
                     summary[category].ongoing += credit;
@@ -162,18 +189,50 @@
             });
 
             let html = "";
-            for(const category in summary) {
+
+            for (const category in summary) {
                 html += `
-                    <tr class="border-b border-gray-700">
-                        <td>${category}</td>
-                        <td>${summary[category].completed}</td>
-                        <td>${summary[category].ongoing}</td>
-                    </tr>
+                    <div class="
+                        flex items-center justify-between
+                        bg-[#faf5dc]
+                        px-4 py-3
+                        rounded-xl
+                        border-[1.5px] border-black
+                    ">
+                        <div class="font-medium">
+                            ${category}
+                        </div>
+
+                        <div class="flex gap-2">
+                            <span class="
+                                px-3 py-1
+                                rounded-full
+                                bg-[#dcefd6]
+                                text-[#1f4d1f]
+                                border-[1.2px] border-black
+                                text-xs font-medium
+                            ">
+                                完成 ${summary[category].completed}
+                            </span>
+
+                            <span class="
+                                px-3 py-1
+                                rounded-full
+                                bg-[#dbe9f6]
+                                border-[1.2px] border-black
+                                text-[#143a66]
+                                text-xs font-medium
+                            ">
+                                進行中 ${summary[category].ongoing}
+                            </span>
+                        </div>
+                    </div>
                 `;
             }
-            summaryBody.innerHTML = html;
 
+            summaryBody.innerHTML = html;
         }
+
 
         // 課程分類其他選項顯示控制
         document.getElementById('m_cat').addEventListener('change', function () {
@@ -210,7 +269,6 @@
                 document.getElementById('modalTitle').innerText = "編輯課程";
                 document.getElementById('courseId').value = course.id;
                 document.getElementById('m_name').value = course.name;
-                // document.getElementById('m_cat').value = course.category;
                 if (predefinedCategories.includes(course.category)) {
                     document.getElementById('m_cat').value = course.category;
                     document.getElementById('m_cat_other').classList.add('hidden');
@@ -337,10 +395,27 @@
                 return;
             }
 
+            
             container.innerHTML = courses.map(c => `
-                <div class="item-bg p-3 shadow-sm">
-                    <div class="font-medium">${c.name}</div>
-                    <div class="text-sm text-gray-600">${c.category}</div>
+                <div class="item-bg p-3 flex justify-between items-center shadow-sm">
+                    <div class="flex flex-col">
+                        <span class="font-medium">${c.name}</span>
+                        <span class="text-sm text-gray-600">${c.category}</span>
+                    </div>
+                    <div class="flex gap-3 text-lg">
+                        <button
+                            onclick='openModal(${JSON.stringify(c)})'
+                            class="text-gray-700 hover:text-blue-600"
+                            title="編輯">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button
+                            onclick="deleteCourse(${c.id})"
+                            class="text-red-500 hover:text-red-700"
+                            title="刪除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </div>
             `).join('');
         }
@@ -361,7 +436,6 @@
             statusText.classList.remove('hidden');
             statusText.innerText = "查詢中…";
 
-            // 可選：清空舊結果
             queryResults.innerHTML = "";
 
             try {
@@ -383,31 +457,7 @@
                 //更新左側查詢結果
                 renderQueryResults(result);
 
-
-                // // 模擬等待
-                // await new Promise(r => setTimeout(r, 800));
-                // // 假的後端回傳資料（test）
-                // const fakeResult = [
-                //     {
-                //         id: 1,
-                //         name: "計算理論",
-                //         category: "系內選修",
-                //         credit: 3,
-                //         status: "完成"
-                //     },
-                //     {
-                //         id: 2,
-                //         name: "OpenCV 深度學習",
-                //         category: "系內選修",
-                //         credit: 3,
-                //         status: "進行中"
-                //     }
-                // ];
-
-                // //display fake result
-                // renderQueryResults(fakeResult);
-
-                statusText.innerText = "查詢完成";
+                statusText.innerText = `查詢完成，共${result.length} 筆資料`;
 
             } catch (err) {
                 console.error(err);
