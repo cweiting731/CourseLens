@@ -92,7 +92,7 @@ def chat():
     - name: TEXT (Course name)
     - category: TEXT (Options: '必修', '系內選修', '系外選修', '領域通識', '融合通識', '大學國文', '體育', '英文', '踏溯台南', '其他')
     - credit: INTEGER (Credits)
-    - status: TEXT (Options: '進行中', '待定', '完成')
+    - status: TEXT (Options: '進行中', '完成')
     - score: INTEGER (Finished score, -1 if no score yet)
     - teacher: TEXT (Instructor name)
     - generalType: TEXT (Options: '人文學', '社會科學', '自然與工程科學', '生命科學與健康', '科技整合領域'. Only if category is '領域通識')
