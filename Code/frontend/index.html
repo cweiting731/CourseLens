@@ -124,8 +124,16 @@
             <input id="m_teacher" placeholder="授課教師"
                    class="w-full border p-1 rounded">
 
-            <input id="m_gen" placeholder="通識分類 (非通識可空)"
-                   class="w-full border p-1 rounded">
+            <select
+                id="m_gen"
+                class="w-full border p-1 rounded hidden">
+                <option value="">請選擇通識分類</option>
+                <option value="人文學">人文學</option>
+                <option value="社會科學">社會科學</option>
+                <option value="自然與工程科學">自然與工程科學</option>
+                <option value="生命科學與健康">生命科學與健康</option>
+                <option value="科際整合領域">科際整合領域</option>
+            </select>
 
             <textarea id="m_detail" placeholder="課程細項"
                       class="w-full border p-1 rounded"></textarea>
@@ -139,6 +147,7 @@
 </div>
     <script>
         const API_BASE = "http://127.0.0.1:5000";
+        let currentQueryResults = null;
 
         // 載入所有資料
         async function loadAll() {
@@ -237,11 +246,22 @@
         // 課程分類其他選項顯示控制
         document.getElementById('m_cat').addEventListener('change', function () {
             const otherInput = document.getElementById('m_cat_other');
+            const genSelect = document.getElementById('m_gen');
+
+            // 控制「其他分類」
             if (this.value === '其他') {
                 otherInput.classList.remove('hidden');
             } else {
                 otherInput.classList.add('hidden');
                 otherInput.value = '';
+            }
+
+            // 控制「通識分類」
+            if (this.value === '領域通識') {
+                genSelect.classList.remove('hidden');
+            } else {
+                genSelect.classList.add('hidden');
+                genSelect.value = '';
             }
         });
 
@@ -282,7 +302,14 @@
                 document.getElementById('m_status').value = course.status;
                 document.getElementById('m_score').value = course.score;
                 document.getElementById('m_teacher').value = course.teacher;
-                document.getElementById('m_gen').value = course.generalType;
+                const genSelect = document.getElementById('m_gen');
+                if (course.category === "領域通識") {
+                    genSelect.classList.remove('hidden');
+                    genSelect.value = course.generalType || "";
+                } else {
+                    genSelect.classList.add('hidden');
+                    genSelect.value = "";
+                }
                 document.getElementById('m_detail').value = course.detail;
             } else {
                 document.getElementById('modalTitle').innerText = "新增課程";
@@ -302,6 +329,9 @@
                 document.getElementById('m_score').disabled = true;
 
                 document.getElementById('m_cat_other').classList.add('hidden');
+                document.getElementById('m_gen').classList.add('hidden');
+                document.getElementById('m_gen').value = '';
+
             }
 
         }
@@ -368,6 +398,21 @@
 
                 closeModal();
                 loadAll();
+                if (currentQueryResults) {
+                    // 找出被修改的課程 id
+                    const updatedId = id ? parseInt(id) : null;
+
+                    // 如果是編輯課程，更新搜尋結果內容
+                    if (updatedId) {
+                        currentQueryResults = currentQueryResults.map(c =>
+                            c.id === updatedId
+                                ? { ...c, ...payload, id: updatedId }
+                                : c
+                        );
+                    }
+
+                    renderQueryResults(currentQueryResults);
+                }
 
             } catch (err) {
                 console.error(err);
@@ -379,6 +424,10 @@
             if(!confirm("確定要刪除嗎？")) return;
             await fetch(`${API_BASE}/course/${id}`, { method: "DELETE" });
             loadAll();
+            if (currentQueryResults) {
+                currentQueryResults = currentQueryResults.filter(c => c.id !== id);
+                renderQueryResults(currentQueryResults);
+            }
         }
 
         
@@ -453,7 +502,7 @@
                 const result = await res.json();
                 // 假設後端回傳的是課程陣列
                 // result = [{ name, category, ... }, ...]
-
+                currentQueryResults = result; 
                 //更新左側查詢結果
                 renderQueryResults(result);
 
