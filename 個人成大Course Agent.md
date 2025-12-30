@@ -38,10 +38,10 @@
 | name        | TEXT    | 課程名稱                                                                      |
 | category    | TEXT    | 課程分類（必修 / 系內選修 / 系外選修 / 通識 / 英文 / 國文 / 體育）                                |
 | credit      | INTEGER | 學分數                                                                       |
-| status      | TEXT    | 課程狀態（進行中 / 待定 / 完成）                                                       |
+| status      | TEXT    | 課程狀態（進行中 / 完成）                                                       |
 | score       | INTEGER | 修畢分數 (只有 status 為 "完成" 會有修畢分數，無修畢分數以 "-1" 表示) (0-100)                     |
 | teacher     | TEXT    | 授課教師                                                                      |
-| generalType | TEXT    | 通識分類（人文學、社會科學、自然與工程科學、生命科學與健康、科際整合領域）只有 category 為 "通識" 時會有通識分類，無內容以空字串表示 |
+| generalType | TEXT    | 通識分類（人文學、社會科學、自然與工程科學、生命科學與健康、科際整合領域）只有 category 為 "領域通識" 時會有通識分類，無內容以空字串表示 |
 | detail      | TEXT    | 選填，填寫其他課程內容（附加資訊、上課方式等等），無內容以 空字串 "" 表示                                   |
 
 ## Example Record
