@@ -7,6 +7,8 @@ DB_PATH = BASE_DIR / "courses.db"
 conn = sqlite3.connect(DB_PATH)
 cursor = conn.cursor()
 
+cursor.execute("DROP TABLE IF EXISTS courses")
+
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS courses (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
