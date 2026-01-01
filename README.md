@@ -1,7 +1,3 @@
----
-上層:
-  - "[[計算理論]]"
----
 # 專題背景與動機
 在大學選課時，學生常需要查詢自己在不同種類的學分中已經修了多少學分了，像是
 
@@ -27,6 +23,12 @@
     存放課程名稱、學分數、成績、類別、授課老師等
 - **以清楚格式回傳查詢結果**  
     提供給使用者列表式的輸出
+# 實機畫面
+<img width="1778" height="996" alt="image" src="https://github.com/user-attachments/assets/ac49b961-2952-41e6-b58f-285ada3248ec" />
+
+# 流程圖與FSM
+<img width="2660" height="1180" alt="流程圖" src="https://github.com/user-attachments/assets/f6b78bd2-fb41-4798-b800-801096b65862" />
+<img width="1360" height="800" alt="FSM" src="https://github.com/user-attachments/assets/69551c91-db69-4737-95fa-e79c94472edf" />
 
 # 資料格式
 | 欄位名稱        | 資料型態    | 說明                                                                          |
@@ -62,10 +64,14 @@ Code/
         app.py
         init_db.py
         courses.db (執行 init_db.py 後產生)
+        seed_history.py (快速插入課程example)
     frontend/
         index.html
-requirements.txt
-.gitignore
+    requirements.txt
+    .gitignore
+    README.md
+    secret.env (設定使用Agent參數)
+README.md
 ```
 
 # 環境需求
@@ -108,6 +114,11 @@ pip install -r requirements.txt
 ```powershell
 python backend\init_db.py
 ```
+若有需要可以執行
+```powershell
+python backend\seed_history.py
+```
+自動填入預設的課程，迅速看到效果
 
 ## 設定API_KEY
 前往 `Code/secret.env`，在 `API_KEY` 的位置填入實際的金鑰
